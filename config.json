@@ -1,0 +1,11 @@
+{
+    "uartPort" : "COM8",
+	"uartSpeed" : 9600,
+	"uartOn" : 0,
+	"numBtns" : 1,
+	"medias" : [
+		"media\\idle.jpg",
+		"media\\bbb_sunflower_1080p_30fps_normal.mp4"
+	],
+	"keyPress" : "a"
+}
