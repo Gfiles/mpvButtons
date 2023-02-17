@@ -5,11 +5,16 @@
 	"numBtns" : 3,
 	"mpvPlayer" : "mpv\\mpv.exe",
 	"useCWD" : "1",
+	"mqttServer" : "192.168.60.20",
+    "mqttPort" : 1883,
+	"btnTopic" : "esp32/client01/button",
+	"ledTopic" : "esp32/client01/led",
+	"statusTopic" : "esp32/status",
+	"keyPress" : "abc",
 	"medias" : [
 		"media\\idle.jpg",
 		"media\\video1.mp4",
 		"media\\video2.mp4",
 		"media\\video3.mp4"
-	],
-	"keyPress" : "abc"
+	]
 }

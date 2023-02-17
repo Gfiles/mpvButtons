@@ -9,6 +9,7 @@ import time
 import os
 import sys
 import subprocess
+import paho.mqtt.client as mqtt #pip install paho-mqtt
 
 def readConfig():
     settingsFile = os.path.join(cwd, "config.json")
@@ -16,6 +17,26 @@ def readConfig():
         data = json.load(json_file)
     return data
 
+def on_connect(client, userdata, flags, rc):
+    print("Connected with result code "+str(rc))
+
+    # Subscribing in on_connect() means that if we lose the connection and
+    # reconnect then subscriptions will be renewed.
+    client.subscribe(btnTopic)
+
+def on_message(client, userdata, msg):
+    global player
+    global btnStates
+    message = int(msg.payload)
+    print(f"{msg.topic} {message}")
+    if player.poll() == 0:
+        player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[message+1]], stdin=subprocess.PIPE)
+        msgToPub = f"{message}0"
+        mqttClient.publish(ledTopic, msgToPub)
+        print(f"On_message received {msgToPub}")
+        btnStates[message] = True
+        print("Published OFf")
+            
 # Get the current working 
 # directory (CWD)
 try:
@@ -39,6 +60,19 @@ medias = config["medias"]
 numBtns = config["numBtns"]
 keyPress = config["keyPress"]
 mpvPlayer = config["mpvPlayer"]
+mqttServer = config["mqttServer"]
+mqttPort = config["mqttPort"]
+btnTopic = config["btnTopic"]
+ledTopic = config["ledTopic"]
+
+mqttClient = mqtt.Client()
+mqttClient.on_connect = on_connect
+mqttClient.on_message = on_message
+
+mqttClient.connect(mqttServer, mqttPort, 60)
+mqttClient.loop_start()
+SentMsg = False
+print("Ready")
 
 for i in range(len(medias)):
     medias[i] = cwd + "\\" + medias[i]
@@ -66,38 +100,50 @@ if uartOn:
     time.sleep(2)
 
 #Variables
-btnState = 0
+btnStates = [False for i in range(numBtns)]
 print(medias[0])
 print(mpvPlayer)
 #subprocess.Popen([cwd + '\mpv\mpv.exe', "--fullscreen", "--no-osc", "--no-audio", "--loop-playlist", medias[0]], stdin=subprocess.PIPE)
 subprocess.Popen([mpvPlayer, "--loop-playlist", "--fullscreen", "--no-osc", medias[0]], stdin=subprocess.PIPE)
 player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[1]], stdin=subprocess.PIPE)
+print("First Run")
+mqttClient.publish(ledTopic, "00")
+btnStates[0] = True
 print("Ready")
     
-while 1:
+while True:
     if uartOn:
         #Serial Read
         serialData = ser.readline()
         #print(serialData)
         strData = serialData.decode()
         #print(strData)
-        if player.poll() == 0 and btnState == 0:
+        if player.poll() == 0 and btnStates[i] == 0:
                 sendStr = f"{i}1" # button numner and 1 for On
                 ser.write(sendStr.encode())
                 print(f"Stop Video")
-                btnState = 1
+                btnStates[i] = True
         
-        if strData != "" and strData[0].isnumeric():
+        if strData != "" and strData.isnumeric():
             j = int(strData[0])
             if player.poll() == 0 and j == 1:
                 print("playing Video")
                 player = subprocess.Popen(['mpv\mpv.exe', "--fullscreen", "--no-osc", medias[j]], stdin=subprocess.PIPE)
                 sendStr = f"{j}0" # button numner and 0 for Off
                 ser.write(sendStr.encode())
-                btnState = 0
+                btnStates[j] = True
     else:
         for i in range(len(keyPress)):
             #aaaprint(keyPress[i])
             if keyboard.is_pressed(keyPress[i]) and player.poll() == 0:
                 print("playing Video")
                 player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[i+1]], stdin=subprocess.PIPE)
+    
+    if player.poll() == 0:
+        for i in range(numBtns):
+            if btnStates[i]:
+                msgToPub = f"{i}1"
+                print(f"Video not Playing {msgToPub}")
+                mqttClient.publish(ledTopic, msgToPub)
+                print("Publish On")
+                btnStates[i] = False
