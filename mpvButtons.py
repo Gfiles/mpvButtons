@@ -38,6 +38,7 @@ uartOn = config["uartOn"]
 medias = config["medias"]
 numBtns = config["numBtns"]
 keyPress = config["keyPress"]
+mpvPlayer = config["mpvPlayer"]
 
 for i in range(len(medias)):
     medias[i] = cwd + "\\" + medias[i]
@@ -67,9 +68,10 @@ if uartOn:
 #Variables
 btnState = 0
 print(medias[0])
+print(mpvPlayer)
 #subprocess.Popen([cwd + '\mpv\mpv.exe', "--fullscreen", "--no-osc", "--no-audio", "--loop-playlist", medias[0]], stdin=subprocess.PIPE)
-subprocess.Popen([cwd + '\mpv\mpv.exe', "--loop-playlist", "--fullscreen", "--no-osc", medias[0]], stdin=subprocess.PIPE)
-player = subprocess.Popen([cwd + '\mpv\mpv.exe', "--fullscreen", "--no-osc", medias[1]], stdin=subprocess.PIPE)
+subprocess.Popen([mpvPlayer, "--loop-playlist", "--fullscreen", "--no-osc", medias[0]], stdin=subprocess.PIPE)
+player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[1]], stdin=subprocess.PIPE)
 print("Ready")
     
 while 1:
@@ -80,7 +82,7 @@ while 1:
         strData = serialData.decode()
         #print(strData)
         if player.poll() == 0 and btnState == 0:
-                sendStr = f"n{i+1}"
+                sendStr = f"{i}1" # button numner and 1 for On
                 ser.write(sendStr.encode())
                 print(f"Stop Video")
                 btnState = 1
@@ -90,10 +92,12 @@ while 1:
             if player.poll() == 0 and j == 1:
                 print("playing Video")
                 player = subprocess.Popen(['mpv\mpv.exe', "--fullscreen", "--no-osc", medias[j]], stdin=subprocess.PIPE)
-                sendStr = f"f{j+1}"
+                sendStr = f"{j}0" # button numner and 0 for Off
                 ser.write(sendStr.encode())
                 btnState = 0
     else:
-        if keyboard.is_pressed(keyPress) and player.poll() == 0:
-            print("playing Video")
-            player = subprocess.Popen([cwd + '\mpv\mpv.exe', "--fullscreen", "--no-osc", medias[1]], stdin=subprocess.PIPE)
+        for i in range(len(keyPress)):
+            #aaaprint(keyPress[i])
+            if keyboard.is_pressed(keyPress[i]) and player.poll() == 0:
+                print("playing Video")
+                player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[i+1]], stdin=subprocess.PIPE)

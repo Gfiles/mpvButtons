@@ -1,11 +1,15 @@
 {
-    "uartPort" : "COM8",
-	"uartSpeed" : 9600,
+    "uartPort" : "COM3",
+	"uartSpeed" : 115200,
 	"uartOn" : 0,
-	"numBtns" : 1,
+	"numBtns" : 3,
+	"mpvPlayer" : "mpv\\mpv.exe",
+	"useCWD" : "1",
 	"medias" : [
 		"media\\idle.jpg",
-		"media\\bbb_sunflower_1080p_30fps_normal.mp4"
+		"media\\video1.mp4",
+		"media\\video2.mp4",
+		"media\\video3.mp4"
 	],
-	"keyPress" : "a"
+	"keyPress" : "abc"
 }
