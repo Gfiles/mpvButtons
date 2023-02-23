@@ -5,6 +5,7 @@
 	"numBtns" : 3,
 	"mpvPlayer" : "\\mpv\\mpv.exe",
 	"useCWD" : "1",
+	"useMqtt" : 1,
 	"mqttServer" : "192.168.60.20",
     "mqttPort" : 1883,
 	"btnTopic" : "esp32/client01/button",

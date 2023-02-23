@@ -68,16 +68,18 @@ mqttServer = config["mqttServer"]
 mqttPort = config["mqttPort"]
 btnTopic = config["btnTopic"]
 ledTopic = config["ledTopic"]
+useMqtt = config["useMqtt"]
 
-mqttClient = mqtt.Client()
-mqttClient.on_connect = on_connect
-mqttClient.on_message = on_message
-mqttClient.on_publish = on_publish 
+if useMqtt:
+    mqttClient = mqtt.Client()
+    mqttClient.on_connect = on_connect
+    mqttClient.on_message = on_message
+    mqttClient.on_publish = on_publish 
 
-mqttClient.connect(mqttServer, mqttPort, 60)
-mqttClient.loop_start()
-SentMsg = False
-print("Ready")
+    mqttClient.connect(mqttServer, mqttPort, 60)
+    mqttClient.loop_start()
+    mqttClient.publish(ledTopic, "00", qos=1)
+    SentMsg = False
 
 for i in range(len(medias)):
     medias[i] = cwd + medias[i]
@@ -113,7 +115,7 @@ print(mpvPlayer)
 subprocess.Popen([mpvPlayer, "--loop-playlist", "--fullscreen", "--no-osc", medias[0]], stdin=subprocess.PIPE)
 player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[1]], stdin=subprocess.PIPE)
 print("First Run")
-mqttClient.publish(ledTopic, "00", qos=1)
+
 btnStates[0] = True
 print("Ready")
     
@@ -124,7 +126,7 @@ while True:
         #print(serialData)
         strData = serialData.decode()
         #print(strData)
-        if player.poll() == 0 and btnStates[i] == 0:
+        if player.poll() == 0 and btnStates[i] == False:
                 sendStr = f"{i}1" # button numner and 1 for On
                 ser.write(sendStr.encode())
                 print(f"Stop Video")
@@ -148,8 +150,9 @@ while True:
     if player.poll() == 0:
         for i in range(numBtns):
             if btnStates[i]:
-                msgToPub = f"{i}1"
-                print(f"Video not Playing {msgToPub}")
-                mqttClient.publish(ledTopic, msgToPub, qos=1)
-                print("Publish On")
+                if useMqtt:
+                    msgToPub = f"{i}1"
+                    print(f"Video not Playing {msgToPub}")
+                    mqttClient.publish(ledTopic, msgToPub, qos=1)
+                    print("Publish On")
                 btnStates[i] = False
