@@ -3,7 +3,7 @@
 	"uartSpeed" : 115200,
 	"uartOn" : 0,
 	"numBtns" : 3,
-	"mpvPlayer" : "mpv\\mpv.exe",
+	"mpvPlayer" : "\\mpv\\mpv.exe",
 	"useCWD" : "1",
 	"mqttServer" : "192.168.60.20",
     "mqttPort" : 1883,
@@ -12,9 +12,9 @@
 	"statusTopic" : "esp32/status",
 	"keyPress" : "abc",
 	"medias" : [
-		"media\\idle.jpg",
-		"media\\video1.mp4",
-		"media\\video2.mp4",
-		"media\\video3.mp4"
+		"\\media\\idle.jpg",
+		"\\media\\video1.mp4",
+		"\\media\\video2.mp4",
+		"\\media\\video3.mp4"
 	]
 }

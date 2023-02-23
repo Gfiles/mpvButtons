@@ -32,10 +32,14 @@ def on_message(client, userdata, msg):
     if player.poll() == 0:
         player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[message+1]], stdin=subprocess.PIPE)
         msgToPub = f"{message}0"
-        mqttClient.publish(ledTopic, msgToPub)
+        mqttClient.publish(ledTopic, msgToPub, qos=1)
         print(f"On_message received {msgToPub}")
         btnStates[message] = True
         print("Published OFf")
+ 
+def on_publish(client,userdata,result):             #create function for callback
+    print("data published \n")
+    pass
             
 # Get the current working 
 # directory (CWD)
@@ -68,6 +72,7 @@ ledTopic = config["ledTopic"]
 mqttClient = mqtt.Client()
 mqttClient.on_connect = on_connect
 mqttClient.on_message = on_message
+mqttClient.on_publish = on_publish 
 
 mqttClient.connect(mqttServer, mqttPort, 60)
 mqttClient.loop_start()
@@ -75,7 +80,7 @@ SentMsg = False
 print("Ready")
 
 for i in range(len(medias)):
-    medias[i] = cwd + "\\" + medias[i]
+    medias[i] = cwd + medias[i]
 
 # Get COM Ports
 if uartOn:
@@ -102,12 +107,13 @@ if uartOn:
 #Variables
 btnStates = [False for i in range(numBtns)]
 print(medias[0])
+mpvPlayer = cwd + mpvPlayer
 print(mpvPlayer)
 #subprocess.Popen([cwd + '\mpv\mpv.exe', "--fullscreen", "--no-osc", "--no-audio", "--loop-playlist", medias[0]], stdin=subprocess.PIPE)
 subprocess.Popen([mpvPlayer, "--loop-playlist", "--fullscreen", "--no-osc", medias[0]], stdin=subprocess.PIPE)
 player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[1]], stdin=subprocess.PIPE)
 print("First Run")
-mqttClient.publish(ledTopic, "00")
+mqttClient.publish(ledTopic, "00", qos=1)
 btnStates[0] = True
 print("Ready")
     
@@ -128,7 +134,7 @@ while True:
             j = int(strData[0])
             if player.poll() == 0 and j == 1:
                 print("playing Video")
-                player = subprocess.Popen(['mpv\mpv.exe', "--fullscreen", "--no-osc", medias[j]], stdin=subprocess.PIPE)
+                player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[j]], stdin=subprocess.PIPE)
                 sendStr = f"{j}0" # button numner and 0 for Off
                 ser.write(sendStr.encode())
                 btnStates[j] = True
@@ -144,6 +150,6 @@ while True:
             if btnStates[i]:
                 msgToPub = f"{i}1"
                 print(f"Video not Playing {msgToPub}")
-                mqttClient.publish(ledTopic, msgToPub)
+                mqttClient.publish(ledTopic, msgToPub, qos=1)
                 print("Publish On")
                 btnStates[i] = False
