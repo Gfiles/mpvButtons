@@ -153,13 +153,21 @@ while True:
                 btnStates[i] = True
         
         if strData != "" and strData.isnumeric():
-            j = int(strData[0])
-            if player.poll() == 0 and j == 1:
+            i = int(strData[0])
+            if player.poll() == 0:
+                playVideo = True
+            else:
+                if lastMessage != i:
+                    player.kill()
+                    playVideo = True
+            
+            if playVideo:   
                 print("playing Video")
-                player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[j]], stdin=subprocess.PIPE)
-                sendStr = f"{j}0" # button numner and 0 for Off
+                player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[i]], stdin=subprocess.PIPE)
+                sendStr = f"{i}0" # button numner and 0 for Off
                 ser.write(sendStr.encode())
-                btnStates[j] = True
+                btnStates[i] = True
+                lastMessage = i
     
     for i in range(len(keyPress)):
         if keyboard.is_pressed(keyPress[i]):
