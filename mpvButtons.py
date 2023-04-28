@@ -32,27 +32,33 @@ def on_message(client, userdata, msg):
     
     message = int(msg.payload)
     print(f"{msg.topic} {message}")
+    #print(f"player.poll(): {player.poll()}")
     
-    if player.poll() == 0:
+    if player.poll() != None:
         playVideo = True
     else:
         if lastMessage != message:
             player.kill()
+            playVideo = True
+            #print (f"btnStates: {i} and btnled: {btnLed[i]}")
             for i in range(numBtns):
-                msgToPub = f"{i}1"
-                #print(f"Video not Playing {msgToPub}")
-                mqttClient.publish(ledTopic, msgToPub, qos=1)
-                #print("Publish On")
-                btnStates[i] = False
-                playVideo = True
+                #print (f"btnStates: {btnStates[i]} and btnled: {btnLed[i]}")
+                if btnStates[i] == False and btnLed[i] == 1:
+                    msgToPub = f"{i}1"
+                    #print(f"Video not Playing {msgToPub}")
+                    mqttClient.publish(ledTopic, msgToPub, qos=1)
+                    #print("Publish On")
+                    btnStates[i] = True
     
+    #print(f"playVideo: {playVideo}")
     if playVideo:    
         player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[message+1]], stdin=subprocess.PIPE)
-        msgToPub = f"{message}0"
-        mqttClient.publish(ledTopic, msgToPub, qos=1)
-        #print(f"On_message received {msgToPub}")
-        btnStates[message] = True
-        #print("Published OFf")
+        if btnLed[message] == 1:
+            msgToPub = f"{message}0"
+            mqttClient.publish(ledTopic, msgToPub, qos=1)
+            #print(f"On_message received {msgToPub}")
+            btnStates[message] = False
+            #print("Published OFf")
         lastMessage = message
  
 def on_publish(client,userdata,result):             #create function for callback
@@ -87,6 +93,7 @@ mqttPort = config["mqttPort"]
 btnTopic = config["btnTopic"]
 ledTopic = config["ledTopic"]
 useMqtt = config["useMqtt"]
+btnLed = config["btnLed"]
 
 for i in range(len(medias)):
     medias[i] = cwd + medias[i]
@@ -114,7 +121,7 @@ if uartOn:
     time.sleep(2)
 
 #Variables
-btnStates = [False for i in range(numBtns)]
+btnStates = [True for i in range(numBtns)]
 print(medias[0])
 mpvPlayer = cwd + mpvPlayer
 lastMessage = 0
@@ -122,6 +129,7 @@ print(mpvPlayer)
 #subprocess.Popen([cwd + '\mpv\mpv.exe', "--fullscreen", "--no-osc", "--no-audio", "--loop-playlist", medias[0]], stdin=subprocess.PIPE)
 subprocess.Popen([mpvPlayer, "--loop-playlist", "--fullscreen", "--no-osc", medias[0]], stdin=subprocess.PIPE)
 player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[1]], stdin=subprocess.PIPE)
+btnStates[0] = False
 print("First Run")
 
 if useMqtt:
@@ -135,28 +143,33 @@ if useMqtt:
     mqttClient.publish(ledTopic, "00", qos=1)
     SentMsg = False
 
-btnStates[0] = True
 print("Ready")
     
 while True:
     playVideo = False
+    # Check if video stopped playing
+    #print(f"player.poll(): {player.poll()}")
+    if player.poll() != None:
+        playVideo = True
+        for i in range(numBtns):
+            if not btnStates[i] and btnLed[i]:
+                msgToPub = f"{i}1"
+                print(f"Video not Playing {msgToPub}")
+                if useMqtt:
+                    mqttClient.publish(ledTopic, msgToPub, qos=1)
+                if uartOn:
+                    ser.write(msgToPub.encode())
+                btnStates[i] = True
+    
     if uartOn:
         #Serial Read
         serialData = ser.readline()
         #print(serialData)
         strData = serialData.decode()
         #print(strData)
-        if player.poll() == 0 and btnStates[i] == False:
-                sendStr = f"{i}1" # button numner and 1 for On
-                ser.write(sendStr.encode())
-                print(f"Stop Video")
-                btnStates[i] = True
-        
         if strData != "" and strData.isnumeric():
             i = int(strData[0])
-            if player.poll() == 0:
-                playVideo = True
-            else:
+            if player.poll() == None:
                 if lastMessage != i:
                     player.kill()
                     playVideo = True
@@ -164,16 +177,15 @@ while True:
             if playVideo:   
                 print("playing Video")
                 player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[i]], stdin=subprocess.PIPE)
-                sendStr = f"{i}0" # button numner and 0 for Off
-                ser.write(sendStr.encode())
-                btnStates[i] = True
+                if btnLed[i] == 1:
+                    sendStr = f"{i}0" # button numner and 0 for Off
+                    ser.write(sendStr.encode())
+                    btnStates[i] = False
                 lastMessage = i
     
     for i in range(len(keyPress)):
         if keyboard.is_pressed(keyPress[i]):
-            if player.poll() == 0:
-                playVideo = True
-            else:
+            if player.poll() == None:
                 if lastMessage != i:
                     player.kill()
                     playVideo = True
@@ -182,13 +194,4 @@ while True:
                 print("playing Video")
                 player = subprocess.Popen([mpvPlayer, "--fullscreen", "--no-osc", medias[i+1]], stdin=subprocess.PIPE)
                 lastMessage = i
-                
-    if player.poll() == 0:
-        for i in range(numBtns):
-            if btnStates[i]:
-                if useMqtt:
-                    msgToPub = f"{i}1"
-                    print(f"Video not Playing {msgToPub}")
-                    mqttClient.publish(ledTopic, msgToPub, qos=1)
-                    print("Publish On")
                 btnStates[i] = False

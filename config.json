@@ -3,6 +3,7 @@
 	"uartSpeed" : 115200,
 	"uartOn" : 0,
 	"numBtns" : 3,
+	"btnLed" : [1, 0, 0],
 	"mpvPlayer" : "\\mpv\\mpv.exe",
 	"useCWD" : "1",
 	"useMqtt" : 1,
